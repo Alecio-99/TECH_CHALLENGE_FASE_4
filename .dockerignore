@@ -1,0 +1,12 @@
+target/
+.idea/
+.vscode/
+*.iml
+.git/
+.gitignore
+README.md
+architecture.png
+architecture.d2
+SEGUIR.md
+infra/.deploy-state
+.DS_Store

@@ -1,0 +1,73 @@
+direction: right
+
+Dev: {
+  shape: person
+  label: "Desenvolvedor"
+}
+
+Docker: {
+  shape: rectangle
+  label: "Docker\n(Dockerfile multi-stage)"
+}
+
+ECR: {
+  shape: rectangle
+  label: "Amazon ECR\n(Imagem da Lambda)"
+}
+
+AWS: {
+  API_Gateway: {
+    shape: rectangle
+    label: "API Gateway\n(POST /avaliacao)"
+  }
+  Lambda_Feedback: {
+    shape: rectangle
+    label: "Lambda processarFeedback\n(Container Image - Java 17)"
+  }
+  DynamoDB: {
+    shape: rectangle
+    label: "DynamoDB\n(Tabela Feedbacks)"
+  }
+  SNS: {
+    shape: rectangle
+    label: "SNS\n(Notificações + Relatório)"
+  }
+  EventBridge: {
+    shape: rectangle
+    label: "EventBridge\n(Cron semanal)"
+  }
+  Lambda_Report: {
+    shape: rectangle
+    label: "Lambda gerarRelatorioSemanal\n(Container Image - Java 17)"
+  }
+  CloudWatch: {
+    shape: rectangle
+    label: "CloudWatch\n(Logs e Métricas)"
+  }
+}
+
+Admin: {
+  shape: person
+  label: "Administrador"
+}
+
+User: {
+  shape: person
+  label: "Estudante"
+}
+
+Dev -> Docker: docker build
+Docker -> ECR: docker push (via AWS CLI)
+ECR -> AWS.Lambda_Feedback: image uri
+ECR -> AWS.Lambda_Report: image uri
+
+User -> AWS.API_Gateway: POST /avaliacao
+AWS.API_Gateway -> AWS.Lambda_Feedback
+AWS.Lambda_Feedback -> AWS.DynamoDB: put item
+AWS.Lambda_Feedback -> AWS.SNS: publish (se nota < 5)
+AWS.EventBridge -> AWS.Lambda_Report: invoke (cron)
+AWS.Lambda_Report -> AWS.DynamoDB: scan última semana
+AWS.Lambda_Report -> AWS.SNS: publish (relatório)
+AWS.SNS -> Admin: e-mail
+AWS.Lambda_Feedback -> AWS.CloudWatch
+AWS.Lambda_Report -> AWS.CloudWatch
