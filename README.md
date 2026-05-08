@@ -32,6 +32,7 @@ A AWS Lambda suporta nativamente **container images**, então empacotamos as dua
 ├── deploy.sh                     # Atalho para o deploy na AWS
 ├── infra/
 │   ├── config.env                # Configurações (região, nomes de recursos, e-mail)
+│   ├── deploy-jar.sh             # Deploy atual usando o JAR gerado em target/
 │   ├── deploy-infra.sh           # Cria/atualiza toda a infra (substitui Terraform)
 │   └── teardown-infra.sh         # Destrói toda a infra criada
 ├── pom.xml                       # Build Maven (gera o JAR sombreado)
@@ -47,9 +48,11 @@ A AWS Lambda suporta nativamente **container images**, então empacotamos as dua
 - **AWS CLI v2** configurado (`aws configure`) com credenciais que possam criar IAM, Lambda, ECR, DynamoDB, SNS, EventBridge e API Gateway.
 - **jq** instalado.
 
-## Deploy na AWS
+## Deploy na AWS com JAR
 
-1. (Opcional) Edite `infra/config.env` para definir região, nomes de recursos e o e-mail do administrador (`ADMIN_EMAIL`).
+O fluxo atual de deploy sobe o JAR gerado em `target/` para a Lambda Java.
+
+1. (Opcional) Edite `infra/config.env` para definir região, nome da Lambda existente e o e-mail do administrador (`ADMIN_EMAIL`).
 2. Execute o deploy:
    ```bash
    chmod +x deploy.sh infra/*.sh
@@ -58,13 +61,14 @@ A AWS Lambda suporta nativamente **container images**, então empacotamos as dua
    O script faz, em ordem:
    - Cria a tabela DynamoDB `Feedbacks` (se não existir).
    - Cria o tópico SNS `feedback-notifications` e (opcionalmente) inscreve o e-mail do admin.
-   - Cria a IAM Role + Policy mínima para as Lambdas.
-   - Cria/atualiza o repositório ECR e faz `docker build` + `docker push`.
-   - Cria/atualiza as duas Lambdas como **Container Image** apontando para a imagem no ECR.
-   - Cria a regra do EventBridge (cron semanal) e a permissão de invocação.
-   - Cria o HTTP API no API Gateway com a rota `POST /avaliacao` e a permissão de invocação.
+   - Aplica a policy mínima DynamoDB/SNS na role usada pela Lambda.
+   - Executa `mvn clean package -DskipTests`.
+   - Faz upload de `target/feedback-service-0.0.1-SNAPSHOT-aws.jar` para a Lambda.
+   - Configura o handler `org.springframework.cloud.function.adapter.aws.FunctionInvoker::handleRequest`.
+   - Configura `SPRING_CLOUD_FUNCTION_DEFINITION=processarFeedback`, `DYNAMODB_TABLE_NAME` e `SNS_TOPIC_ARN`.
 3. Confirme a inscrição do SNS no e-mail recebido (caso tenha definido `ADMIN_EMAIL`).
-4. O endpoint final é exibido ao fim do script (também salvo em `infra/.deploy-state/state.env`).
+
+Para voltar ao fluxo Docker/ECR futuramente, use `infra/deploy-infra.sh`.
 
 Para destruir tudo:
 ```bash

@@ -1,0 +1,30 @@
+# Build
+target/
+*.jar
+*.war
+*.ear
+
+# IDE / editor
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local deploy state
+infra/.deploy-state/
+
+# Local credentials and env files
+.env
+.env.*
+*.pem
+*.key
+credentials
+credentials.json
+token.json
+
+# AWS CLI local files, in case someone creates them inside the repo
+.aws/
+aws-credentials*
