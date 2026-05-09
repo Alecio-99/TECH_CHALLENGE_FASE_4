@@ -1,6 +1,8 @@
 param(
     [string]$AwsRegion = "us-east-2",
     [string]$LambdaName = "TechChallenge",
+    [string]$FunctionDefinition = "processarFeedback",
+    [int]$TimeoutSeconds = 30,
     [string]$DynamoTable = "Feedbacks",
     [string]$SnsTopicName = "feedback-notifications",
     [string]$AdminEmail = ""
@@ -26,7 +28,6 @@ Assert-Command "mvn"
 $RootDir = Resolve-Path "$PSScriptRoot\.."
 $JarPath = Join-Path $RootDir "target\feedback-service-0.0.1-SNAPSHOT-aws.jar"
 $Handler = "org.springframework.cloud.function.adapter.aws.FunctionInvoker::handleRequest"
-$FunctionDefinition = "processarFeedback"
 
 Write-Step "Validando credenciais AWS..."
 $AccountId = aws sts get-caller-identity --query Account --output text
@@ -180,7 +181,7 @@ aws lambda update-function-configuration `
     --runtime java17 `
     --handler $Handler `
     --memory-size 512 `
-    --timeout 30 `
+    --timeout $TimeoutSeconds `
     --environment "file://$EnvironmentPath" `
     --region $AwsRegion *> $null
 
